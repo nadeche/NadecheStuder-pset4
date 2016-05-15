@@ -9,10 +9,10 @@ import android.content.Context;
  */
 class ToDoItem {
 
-    private long id;             // holds the id from the corresponding database row
+    private long id;            // holds the id from the corresponding database row
     private String task;        // holds the task to do
     private boolean isDone;     // holds whether a task is done(true) or not(false)
-    private long listId;         // holds the table id of the list name the to do item belongs to
+    private long listId;        // holds the id of the list name the to do item belongs to
 
     public ToDoItem(long id, String task, long listId) {
         setId(id);
@@ -30,15 +30,17 @@ class ToDoItem {
         this.id = id;
     }
 
-    // get and set isDone
+    // get isDone
     public boolean isDone() {
         return isDone;
     }
 
+    /** Sets isDone only in the ToDoItem */
     public void setDone(boolean done) {
         isDone = done;
     }
 
+    /** Sets isDone in the ToDoItem and the database*/
     public void setDone(boolean done, Context context) {
         setDone(done);
 
@@ -55,11 +57,7 @@ class ToDoItem {
         this.task = task;
     }
 
-    // get and set listId
-    public long getListId() {
-        return listId;
-    }
-
+    // set listId
     public void setListId(long listId) {
         this.listId = listId;
     }

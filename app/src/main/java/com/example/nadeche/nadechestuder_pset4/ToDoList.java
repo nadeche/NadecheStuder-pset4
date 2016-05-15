@@ -9,7 +9,7 @@ import java.util.List;
  * Created by Nadeche Studer
  *
  * This class holds the fields of a to do list.
- * The name of the list and a list of toDoItem objects.
+ * It can insert and delete a ToDoItem in its list of ToDoItems and the database.
  */
 public class ToDoList {
 
@@ -36,10 +36,6 @@ public class ToDoList {
         return toDoList;
     }
 
-    public void setToDoList(List<ToDoItem> toDoList) {
-        this.toDoList = toDoList;
-    }
-
     // get and set the id
     public long getId(){
         return id;
@@ -49,21 +45,26 @@ public class ToDoList {
         this.id = id;
     }
 
+    /** Inserts a ToDoItem to its list of ToDoItems and in the database */
     public void insertToDoItem(Context context, String task, long listId) {
 
+        // database insert
         ToDoListDbHelper toDoListDbHelper = new ToDoListDbHelper(context);
         long itemId= toDoListDbHelper.insert(task, listId);
 
+        // list insert
         ToDoItem toDoItem = new ToDoItem(itemId, task, listId);
         toDoList.add(toDoItem);
-
     }
 
+    /** Deletes a ToDoItem to its list of ToDoItems and in the database */
     public void deleteToDoItem(Context context, ToDoItem toDoItem) {
 
+        // database delete
         ToDoListDbHelper toDoListDbHelper = new ToDoListDbHelper(context);
         toDoListDbHelper.delete(toDoItem);
 
+        // list delete
         toDoList.remove(toDoItem);
     }
 }

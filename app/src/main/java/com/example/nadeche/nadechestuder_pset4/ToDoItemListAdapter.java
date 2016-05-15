@@ -15,9 +15,8 @@ import java.util.List;
  * Created by Nadeche Studer
  *
  * This custom arrayAdapter adapts ToDoItems to a listView.
- * It checks if a ToDOItem is done or not and sets the corresponding textView attributes.
+ * It checks if a ToDoItem is done or not and sets the corresponding textView attributes.
  */
-
 class ToDoItemListAdapter extends ArrayAdapter <ToDoItem> {
 
     public ToDoItemListAdapter(Context context, List<ToDoItem> toDoList) {

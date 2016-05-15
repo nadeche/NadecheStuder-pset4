@@ -15,43 +15,42 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.List;
-
 /**
  * Created by Nadeche Studer
  *
- * Main activity of this to do list app.
- * It shows to do tasks saved in a database.
+ * This activity shows to do tasks.
  * The user can add new tasks with an editText at the bottom.
  * The user can also set tasks to done by tapping and delete them by tapping and holding.
  */
 public class ToDoListActivity extends AppCompatActivity {
 
     private ToDoItemListAdapter toDoItemsListAdapter;    // handles the display of the to do items
-    private ListView toDoListView;              // holds the to do items in display
-    private ToDoList toDoList;            // hold the to do items in memory
-    private ToDoManagerSingleton toDoManagerSingleton;
-    private long listId;
+    private ListView toDoListView;                       // holds the to do items in display
+    private ToDoList toDoList;                           // holds the to do items in memory
+    private ToDoManagerSingleton toDoManagerSingleton;   // holds all to do lists and items in memory
+    private long listId;                                 // holds the id of the list currently on display
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_to_do_list);
 
+        // retrieve id of the list to display
         Intent previousActivity = getIntent();
         listId = previousActivity.getLongExtra("toDoListId", -1);
-        Log.d("listId", String.valueOf(listId));
 
+        // retrieve the correct to do list to display
         toDoManagerSingleton = ToDoManagerSingleton.getInstance();
         toDoList = toDoManagerSingleton.getToDoListById(listId);
 
+        // show the list title
         TextView listTitle = (TextView)findViewById(R.id.list_title);
         listTitle.setText(toDoList.getTitle());
 
+        // show the list items
         toDoItemsListAdapter = new ToDoItemListAdapter(this, toDoList.getToDoList());
         toDoListView = (ListView)findViewById(R.id.toDoItemsListView);
         toDoListView.setAdapter(toDoItemsListAdapter);
-
 
         // with short tap set the to do task to done or not done
         toDoListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -71,7 +70,7 @@ public class ToDoListActivity extends AppCompatActivity {
 
     }
 
-    /** Handle the click on the 'add' button to add a new to do task to the database and the listView.
+    /** Handles the click on the 'add' button to add a new to do task.
      *  It also checks if there is something in the editText to save */
     public void addToDoItemButtonClick(View view) {
 
@@ -95,8 +94,7 @@ public class ToDoListActivity extends AppCompatActivity {
             // let the user know the save was successful
             Toast.makeText(ToDoListActivity.this, getText(R.string.toast_saved), Toast.LENGTH_SHORT).show();
 
-            // update the listView
-            updateView();
+            toDoItemsListAdapter.notifyDataSetChanged();
 
             // clear editText
             newToDoItemEditText.setText("");
@@ -110,19 +108,15 @@ public class ToDoListActivity extends AppCompatActivity {
         newToDoItemEditText.clearFocus();
     }
 
-    /** Update the listView by reading the current database and notifying the list adapter */
-    private void updateView() {
-        toDoItemsListAdapter.notifyDataSetChanged();
-    }
-
-    /** Check if the taped item is set to done or not done and sat it to the opposite state */
+    /** Check if the taped item is set to done or not done and set it to the opposite state */
     private void toDoOrNotToDo(int position) {
 
         ToDoItem toDoTask = (ToDoItem) toDoListView.getItemAtPosition(position);
 
+        // save new state in ToDoItem and database
         toDoTask.setDone(!toDoTask.isDone(), this);
 
-        updateView();
+        toDoItemsListAdapter.notifyDataSetChanged();
 
         // display to the user what has changed
         if(toDoTask.isDone()) {
@@ -133,29 +127,28 @@ public class ToDoListActivity extends AppCompatActivity {
         }
     }
 
-    /** Display a dialog to the user to ask if they want to delete the task they just taped and held.
+    /** Displays a dialog to the user to ask if they want to delete the task they just taped and held.
      * If they are sure delete the task form the database and update the listView.
      * If they don't want to delete the task close the dialog and do nothing */
     private boolean alertDialogToDelete(final int position) {
 
         // open alert dialog and display dialog message
         AlertDialog.Builder alertDialogDeleteToDoItem = new AlertDialog.Builder(ToDoListActivity.this);
-        alertDialogDeleteToDoItem.setMessage(getText(R.string.delete_alert_message));
+        alertDialogDeleteToDoItem.setMessage(getText(R.string.alert_dialog_delete_item_message));
         alertDialogDeleteToDoItem.setCancelable(false);
 
         alertDialogDeleteToDoItem.setPositiveButton(getText(R.string.yes), new DialogInterface.OnClickListener(){
             @Override
             public void onClick(DialogInterface dialog, int which) {
 
-                // with a click on the yes button delete the task form the database
+                // with a click on the yes button delete the task
                 ToDoItem deleteTask = (ToDoItem) toDoListView.getItemAtPosition(position);
                 toDoList.deleteToDoItem(ToDoListActivity.this, deleteTask);
 
                 // let the user know they task has been deleted
                 Toast.makeText(ToDoListActivity.this, getText(R.string.toast_deleted), Toast.LENGTH_SHORT).show();
 
-                // update the listView
-                updateView();
+                toDoItemsListAdapter.notifyDataSetChanged();
             }
         });
         alertDialogDeleteToDoItem.setNegativeButton(getText(R.string.no), new DialogInterface.OnClickListener() {

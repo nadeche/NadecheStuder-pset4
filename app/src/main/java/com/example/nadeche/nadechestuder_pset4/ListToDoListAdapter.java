@@ -11,6 +11,8 @@ import java.util.List;
 
 /**
  * Created by Nadeche Studer
+ *
+ * This custom arrayAdapter adapts to do lists to a listView.
  */
 public class ListToDoListAdapter extends ArrayAdapter <ToDoList> {
 
@@ -27,9 +29,9 @@ public class ListToDoListAdapter extends ArrayAdapter <ToDoList> {
 
         ToDoList toDoList = getItem(position);
 
+        // set the title of the list to a textView
         TextView toDoListTextView = (TextView) listItemView.findViewById(R.id.toDoTextView);
         toDoListTextView.setText(toDoList.getTitle());
-
 
         return listItemView;
     }
