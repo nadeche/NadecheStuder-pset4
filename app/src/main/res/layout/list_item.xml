@@ -9,6 +9,6 @@
         android:layout_height="wrap_content"
         android:padding="8dp"
         android:textSize="17sp"
-        android:id="@+id/toDoTaskTextView"/>
+        android:id="@+id/toDoTextView"/>
 
 </LinearLayout>

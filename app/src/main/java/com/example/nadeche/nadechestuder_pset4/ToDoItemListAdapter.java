@@ -18,9 +18,9 @@ import java.util.List;
  * It checks if a ToDOItem is done or not and sets the corresponding textView attributes.
  */
 
-class ToDoListAdapter extends ArrayAdapter <ToDoItem> {
+class ToDoItemListAdapter extends ArrayAdapter <ToDoItem> {
 
-    public ToDoListAdapter(Context context, List<ToDoItem> toDoList) {
+    public ToDoItemListAdapter(Context context, List<ToDoItem> toDoList) {
         super(context, R.layout.list_item, toDoList);
     }
 
@@ -34,10 +34,10 @@ class ToDoListAdapter extends ArrayAdapter <ToDoItem> {
         ToDoItem toDoItem = getItem(position);
 
         // set task from the toDoItem to a textView
-        TextView toDoTaskTextView = (TextView)listItemView.findViewById(R.id.toDoTaskTextView);
-        toDoTaskTextView.setText(toDoItem.task);
+        TextView toDoTaskTextView = (TextView)listItemView.findViewById(R.id.toDoTextView);
+        toDoTaskTextView.setText(toDoItem.getTask());
 
-        if(toDoItem.isDone){
+        if(toDoItem.isDone()){
             // set text to gray and strike through when a toDoItem is done
             toDoTaskTextView.setTextColor(Color.GRAY);
             toDoTaskTextView.setPaintFlags(toDoTaskTextView.getPaintFlags()| Paint.STRIKE_THRU_TEXT_FLAG);

@@ -2,17 +2,19 @@ package com.example.nadeche.nadechestuder_pset4;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -25,23 +27,31 @@ import java.util.List;
  */
 public class ToDoListActivity extends AppCompatActivity {
 
-    private ToDoListDbHelper toDoListDbHelper;  // handles all database interactions
-    private ToDoListAdapter toDoListAdapter;    // handles the display of the to do items
+    private ToDoItemListAdapter toDoItemsListAdapter;    // handles the display of the to do items
     private ListView toDoListView;              // holds the to do items in display
-    private List<ToDoItem> toDoList;            // hold the to do items in memory
+    private ToDoList toDoList;            // hold the to do items in memory
+    private ToDoManagerSingleton toDoManagerSingleton;
+    private long listId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_to_do_list);
 
-        // initialize all properties
-        toDoListDbHelper = new ToDoListDbHelper(this);
-        toDoList = new ArrayList<>();
-        toDoListDbHelper.read(toDoList);
+        Intent previousActivity = getIntent();
+        listId = previousActivity.getLongExtra("toDoListId", -1);
+        Log.d("listId", String.valueOf(listId));
+
+        toDoManagerSingleton = ToDoManagerSingleton.getInstance();
+        toDoList = toDoManagerSingleton.getToDoListById(listId);
+
+        TextView listTitle = (TextView)findViewById(R.id.list_title);
+        listTitle.setText(toDoList.getTitle());
+
+        toDoItemsListAdapter = new ToDoItemListAdapter(this, toDoList.getToDoList());
         toDoListView = (ListView)findViewById(R.id.toDoItemsListView);
-        toDoListAdapter = new ToDoListAdapter(this, toDoList);
-        toDoListView.setAdapter(toDoListAdapter);
+        toDoListView.setAdapter(toDoItemsListAdapter);
+
 
         // with short tap set the to do task to done or not done
         toDoListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -80,7 +90,7 @@ public class ToDoListActivity extends AppCompatActivity {
         if(!newToDoTask.isEmpty()) {
 
             // user has entered text so save it
-            toDoListDbHelper.insert(newToDoTask);
+            toDoList.insertToDoItem(ToDoListActivity.this, newToDoTask, listId);
 
             // let the user know the save was successful
             Toast.makeText(ToDoListActivity.this, getText(R.string.toast_saved), Toast.LENGTH_SHORT).show();
@@ -102,11 +112,7 @@ public class ToDoListActivity extends AppCompatActivity {
 
     /** Update the listView by reading the current database and notifying the list adapter */
     private void updateView() {
-
-        toDoListDbHelper.read(toDoList);
-
-        toDoListAdapter.notifyDataSetChanged();
-
+        toDoItemsListAdapter.notifyDataSetChanged();
     }
 
     /** Check if the taped item is set to done or not done and sat it to the opposite state */
@@ -114,18 +120,16 @@ public class ToDoListActivity extends AppCompatActivity {
 
         ToDoItem toDoTask = (ToDoItem) toDoListView.getItemAtPosition(position);
 
-        toDoTask.isDone = !toDoTask.isDone;
-
-        toDoListDbHelper.update(toDoTask);
+        toDoTask.setDone(!toDoTask.isDone(), this);
 
         updateView();
 
         // display to the user what has changed
-        if(toDoTask.isDone) {
-            Toast.makeText(ToDoListActivity.this, getText(R.string.toast_done), Toast.LENGTH_SHORT).show();
+        if(toDoTask.isDone()) {
+            Toast.makeText(this, getText(R.string.toast_done), Toast.LENGTH_SHORT).show();
         }
         else {
-            Toast.makeText(ToDoListActivity.this, getText(R.string.to_do), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getText(R.string.to_do), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -145,7 +149,7 @@ public class ToDoListActivity extends AppCompatActivity {
 
                 // with a click on the yes button delete the task form the database
                 ToDoItem deleteTask = (ToDoItem) toDoListView.getItemAtPosition(position);
-                toDoListDbHelper.delete(deleteTask);
+                toDoList.deleteToDoItem(ToDoListActivity.this, deleteTask);
 
                 // let the user know they task has been deleted
                 Toast.makeText(ToDoListActivity.this, getText(R.string.toast_deleted), Toast.LENGTH_SHORT).show();

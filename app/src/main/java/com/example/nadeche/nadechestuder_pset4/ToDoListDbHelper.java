@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 import java.util.List;
 
@@ -22,15 +23,22 @@ import java.util.List;
  */
 class ToDoListDbHelper extends SQLiteOpenHelper {
 
-    // database and table information
+    // database information
     private static final String DB_NAME = "toDos.db";
-    private static final int DB_VERSION = 3;
-    private static final String TABLE_NAME = "toDoList";
+    private static final int DB_VERSION = 1;
 
-    // column names
+    // column name id for both tables
     private static final String _ID = "_id";
-    private static final String TASK_COLUMN = "task";
-    private static final String IS_DONE = "isDone";
+
+    // to do lists table name and column
+    private static final String TABLE_NAME_LISTS = "toDoLists";
+    private static final String TITLE_LISTS_COLUMN = "title";
+
+    // to do items table name and column names
+    private static final String TABLE_NAME_TO_DOS = "toDoItems";
+    private static final String TASK_TO_DOS_COLUMN = "task";
+    private static final String IS_DONE_TO_DOS_COLUMN = "isDone";
+    private static final String LIST_ID_TO_DOS_COLUMN = "listId";
 
     // context that holds the activity's context in order to use recourse strings
     private final Context activityContext;
@@ -43,47 +51,131 @@ class ToDoListDbHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
 
-        // create table
-        String CREATE_DB = "CREATE TABLE " + TABLE_NAME + "(" +
-                _ID +" INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                TASK_COLUMN +" TEXT NOT NULL, " +
-                IS_DONE + " INTEGER DEFAULT 0)";
-        db.execSQL(CREATE_DB);
+        // create to do lists table
+        String CREATE_TABLE_LISTS = "CREATE TABLE " + TABLE_NAME_LISTS + "(" +
+                _ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                TITLE_LISTS_COLUMN + " TEXT NOT NULL)";
+        db.execSQL(CREATE_TABLE_LISTS);
+
+        // create to do list table
+        String CREATE_TABLE_TO_DOS = "CREATE TABLE " + TABLE_NAME_TO_DOS + "(" +
+                _ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                TASK_TO_DOS_COLUMN + " TEXT NOT NULL, " +
+                IS_DONE_TO_DOS_COLUMN + " INTEGER DEFAULT 0, " +
+                LIST_ID_TO_DOS_COLUMN + " INTEGER NOT NULL)";
+        db.execSQL(CREATE_TABLE_TO_DOS);
+
+        // insert dummy list
+        String INSERT_DUMMY_LIST = "INSERT INTO " + TABLE_NAME_LISTS + " (" + TITLE_LISTS_COLUMN + ") " +
+                "VALUES('Instructions')";
+        db.execSQL(INSERT_DUMMY_LIST);
+        Log.d("insert of dummy list", INSERT_DUMMY_LIST);
+
+        // get id from first list
+        String query = "SELECT "+ _ID + " FROM " + TABLE_NAME_LISTS;
+        Cursor cursor = db.rawQuery(query, null);
+        Log.d("select query", query);
+        long dummyListId = -1;
+        if(cursor.moveToFirst()) {
+            int idColumnIndex = cursor.getColumnIndex(_ID);
+            dummyListId = cursor.getLong(idColumnIndex);
+        }
+        cursor.close();
+        Log.d("dummyListId", String.valueOf(dummyListId));
 
         // insert instructions on how to use the app
-        db.execSQL("INSERT INTO " + TABLE_NAME + "(" + TASK_COLUMN + ") " +
-                "VALUES('"+ activityContext.getText(R.string.db_instruction_entry_add)+"')," +
-                "('" + activityContext.getText(R.string.db_instruction_entry_done) + "')," +
-                "('" + activityContext.getText(R.string.db_instruction_entry_delete)+"')");
+        db.execSQL("INSERT INTO " + TABLE_NAME_TO_DOS + "(" + TASK_TO_DOS_COLUMN + ", " + LIST_ID_TO_DOS_COLUMN + ") " +
+                "VALUES('"+ activityContext.getText(R.string.db_instruction_entry_add) +"', " + dummyListId + ")," +
+                "('" + activityContext.getText(R.string.db_instruction_entry_done) +"', " + dummyListId + ")," +
+                "('" + activityContext.getText(R.string.db_instruction_entry_delete)+"', " + dummyListId + ")");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
-        db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME_LISTS);
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME_TO_DOS);
         onCreate(db);
     }
 
-    /** Inserts a new row in the database, sets the is_done column to default false */
-    public void insert(String task) {
+    //---------------- method for both tables ----------------//
+
+    /** Reads the current records of both tables and saves it in the ToDoList list */
+    public void readAll(List<ToDoList> toDoListList) {
+
+        SQLiteDatabase db = getReadableDatabase();
+
+        String query = "SELECT " + TABLE_NAME_TO_DOS + ".*, " + TITLE_LISTS_COLUMN+ " FROM " + TABLE_NAME_LISTS +
+                " INNER JOIN " + TABLE_NAME_TO_DOS + " ON " + TABLE_NAME_LISTS + "." + _ID +
+                " = " + TABLE_NAME_TO_DOS + "." + LIST_ID_TO_DOS_COLUMN +
+                " ORDER BY " + TABLE_NAME_LISTS + "." + _ID + ", " + TABLE_NAME_TO_DOS + "." + _ID;
+        Cursor cursor = db.rawQuery(query, null);
+
+        // clear the current toDoListList
+        toDoListList.clear();
+
+        if(cursor.moveToFirst()) {
+
+            int _idColumnIndex = cursor.getColumnIndex(_ID);
+            int taskColumnIndex = cursor.getColumnIndex(TASK_TO_DOS_COLUMN);
+            int isDoneColumnIndex = cursor.getColumnIndex(IS_DONE_TO_DOS_COLUMN);
+            int listIdColumnIndex = cursor.getColumnIndex(LIST_ID_TO_DOS_COLUMN);
+            int titleColumnIndex = cursor.getColumnIndex(TITLE_LISTS_COLUMN);
+            long lastListId = 0;
+            ToDoList toDoList = null;
+
+            // save the new items in the ToDoListList
+            do {
+                if(cursor.getLong(listIdColumnIndex) > lastListId) {
+                    toDoList = new ToDoList();
+                    toDoList.setId(cursor.getLong(listIdColumnIndex));
+                    toDoList.setTitle(cursor.getString(titleColumnIndex));
+
+                    toDoListList.add(toDoList);
+                    Log.d("new toDoList", String.valueOf(lastListId));
+                }
+
+                ToDoItem toDoItem = new ToDoItem(
+                        cursor.getLong(_idColumnIndex),
+                        cursor.getString(taskColumnIndex),
+                        cursor.getLong(listIdColumnIndex));
+                toDoItem.setDone(cursor.getInt(isDoneColumnIndex) == 1);
+
+                toDoList.getToDoList().add(toDoItem);
+
+                lastListId = toDoItem.getListId();
+            } while(cursor.moveToNext());
+        }
+        cursor.close();
+        db.close();
+    }
+
+
+    //---------------- CRUD methods for to do item table ----------------//
+
+    /** Inserts a new row in the to do's table with corresponding listId, sets the is_done column to default false */
+    public long insert(String task, long listId) {
 
         SQLiteDatabase db = getWritableDatabase();
 
         ContentValues entry = new ContentValues();
-        entry.put(TASK_COLUMN, task);
+        entry.put(TASK_TO_DOS_COLUMN, task);
+        entry.put(LIST_ID_TO_DOS_COLUMN, listId);
 
-        db.insert(TABLE_NAME, null, entry);
+        long rowId = db.insert(TABLE_NAME_TO_DOS, null, entry);
 
         db.close();
+
+        return rowId;
     }
 
-    /** Reads the current database and saves it in the ToDOItem list */
-    public void read(List<ToDoItem> toDoList) {
+    /** Reads the current to do's table and saves it in the ToDoItem list */
+    public void read(List<ToDoItem> toDoList, long listId) {
 
         SQLiteDatabase db = getReadableDatabase();
 
-        String query = "SELECT * FROM " + TABLE_NAME;
-        Cursor toDoCursor = db.rawQuery(query, null);
+        String query = "SELECT * FROM " + TABLE_NAME_TO_DOS + " WHERE " + _ID + " = ?";
+        Cursor toDoCursor = db.rawQuery(query, new String[]{String.valueOf(listId)});
 
         // clear the current toDoList
         toDoList.clear();
@@ -91,15 +183,17 @@ class ToDoListDbHelper extends SQLiteOpenHelper {
         if(toDoCursor.moveToFirst()) {
 
             int _idColumnIndex = toDoCursor.getColumnIndex(_ID);
-            int taskColumnIndex = toDoCursor.getColumnIndex(TASK_COLUMN);
-            int isDoneColumnIndex = toDoCursor.getColumnIndex(IS_DONE);
+            int taskColumnIndex = toDoCursor.getColumnIndex(TASK_TO_DOS_COLUMN);
+            int isDoneColumnIndex = toDoCursor.getColumnIndex(IS_DONE_TO_DOS_COLUMN);
+            int listIdColumnIndex = toDoCursor.getColumnIndex(LIST_ID_TO_DOS_COLUMN);
 
             // save the new items in the ToDoList
             do{
-                ToDoItem toDoItem = new ToDoItem();
-                toDoItem.id = toDoCursor.getInt(_idColumnIndex);
-                toDoItem.task = toDoCursor.getString(taskColumnIndex);
-                toDoItem.isDone = toDoCursor.getInt(isDoneColumnIndex) == 1;
+                ToDoItem toDoItem = new ToDoItem(
+                        toDoCursor.getLong(_idColumnIndex),
+                        toDoCursor.getString(taskColumnIndex),
+                        toDoCursor.getLong(listIdColumnIndex));
+                toDoItem.setDone(toDoCursor.getInt(isDoneColumnIndex) == 1);
 
                 toDoList.add(toDoItem);
 
@@ -109,26 +203,96 @@ class ToDoListDbHelper extends SQLiteOpenHelper {
         db.close();
     }
 
-    /** Updates a row of the database, corresponding with the passed toDoItem */
+    /** Updates a row of the to do's table, corresponding with the passed toDoItem */
     public void update(ToDoItem toDoItem){
 
         SQLiteDatabase db = getWritableDatabase();
 
         ContentValues contentValues = new ContentValues();
-        contentValues.put(TASK_COLUMN, toDoItem.task);
-        contentValues.put(IS_DONE,toDoItem.isDone);
+        contentValues.put(TASK_TO_DOS_COLUMN, toDoItem.getTask());
+        contentValues.put(IS_DONE_TO_DOS_COLUMN,toDoItem.isDone());
 
-        db.update(TABLE_NAME,contentValues,_ID + "=?" , new String[]{String.valueOf(toDoItem.id)});
+        db.update(TABLE_NAME_TO_DOS,contentValues,_ID + "=?" , new String[]{String.valueOf(toDoItem.getId())});
 
         db.close();
     }
 
-    /** Deletes a row of the database, corresponding with the passed toDoItem */
+    /** Deletes a row of the to do's table, corresponding with the passed toDoItem */
     public void delete(ToDoItem toDoItem){
 
         SQLiteDatabase db = getWritableDatabase();
 
-        db.delete(TABLE_NAME,_ID + "=?", new String[]{String.valueOf(toDoItem.id)});
+        db.delete(TABLE_NAME_TO_DOS,_ID + "=?", new String[]{String.valueOf(toDoItem.getId())});
+
+        db.close();
+    }
+
+    //---------------- CRUD methods for to do lists table ----------------//
+
+    /** Inserts a new row in the to do lists table and ads a list title*/
+    public  void insert(String listTitle) {
+        SQLiteDatabase db = getWritableDatabase();
+
+        ContentValues entry = new ContentValues();
+        entry.put(TITLE_LISTS_COLUMN, listTitle);
+
+        db.insert(TABLE_NAME_LISTS, null, entry);
+
+        db.close();
+    }
+
+    /** Reads the current to do lists table and saves it in the ToDoList list */
+    public void read(List<ToDoList> toDoListList) {
+
+        SQLiteDatabase db = getReadableDatabase();
+
+        String query = "SELECT * FROM " + TABLE_NAME_LISTS;
+        Cursor toDoCursor = db.rawQuery(query, null);
+
+        // clear the current toDoListList
+        toDoListList.clear();
+
+        if(toDoCursor.moveToFirst()) {
+
+            int _idColumnIndex = toDoCursor.getColumnIndex(_ID);
+            int titleColumnIndex = toDoCursor.getColumnIndex(TITLE_LISTS_COLUMN);
+
+            // save the new items in the ToDoList
+            do{
+                ToDoList toDoList = new ToDoList();
+                toDoList.setId(toDoCursor.getLong(_idColumnIndex));
+                toDoList.setTitle(toDoCursor.getString(titleColumnIndex));
+
+                toDoListList.add(toDoList);
+
+            } while(toDoCursor.moveToNext());
+        }
+        toDoCursor.close();
+        db.close();
+    }
+
+    /** Updates a row of the to do lists table, corresponding with the passed toDoList */
+    public void update(ToDoList toDoList){
+
+        SQLiteDatabase db = getWritableDatabase();
+
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(TITLE_LISTS_COLUMN, toDoList.getTitle());
+
+        db.update(TABLE_NAME_LISTS,contentValues,_ID + "=?" , new String[]{String.valueOf(toDoList.getId())});
+
+        db.close();
+    }
+
+    /** Deletes a row of the to do lists table, corresponding with the passed toDoList,
+     *  and the rows with the corresponding listId in the to do's table. */
+    public void delete(ToDoList toDoList){
+
+        SQLiteDatabase db = getWritableDatabase();
+
+        db.delete(TABLE_NAME_TO_DOS, LIST_ID_TO_DOS_COLUMN + "=?", new String[]{String.valueOf(toDoList.getId())});
+
+        db.delete(TABLE_NAME_LISTS, _ID + "=?", new String[]{String.valueOf(toDoList.getId())});
 
         db.close();
     }
