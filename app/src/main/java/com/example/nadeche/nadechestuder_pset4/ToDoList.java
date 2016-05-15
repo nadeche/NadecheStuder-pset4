@@ -17,6 +17,11 @@ public class ToDoList {
     private String title;                                   // holds the name of the to do list
     private List<ToDoItem> toDoList = new ArrayList<>();    // holds the to do items of the to do list
 
+    public ToDoList(long id, String title) {
+        setId(id);
+        setTitle(title);
+    }
+
     // get and set the title
     public String getTitle() {
         return title;

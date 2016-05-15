@@ -1,10 +1,14 @@
 package com.example.nadeche.nadechestuder_pset4;
 
+import android.app.Dialog;
 import android.content.Intent;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 
 public class ListToDoListsActivity extends AppCompatActivity {
@@ -28,6 +32,40 @@ public class ListToDoListsActivity extends AppCompatActivity {
 
         toDoListsListView = (ListView)findViewById(R.id.toDoListsListView);
         toDoListsListView.setAdapter(listToDoListAdapter);
+
+        FloatingActionButton fabAdd = (FloatingActionButton)findViewById(R.id.fab_add);
+        //
+        fabAdd.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                final Dialog dialog = new Dialog(ListToDoListsActivity.this);
+                dialog.setContentView(R.layout.dialog_add_list);
+                dialog.setTitle(getText(R.string.add));
+
+                Button addListButton = (Button)dialog.findViewById(R.id.addNewListButton);
+                Button cancelButton = (Button) dialog.findViewById(R.id.dialogCancel);
+                addListButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+
+                        EditText newListTitleEditText = (EditText) dialog.findViewById(R.id.newListTitleEditText);
+                        String newListTitle = newListTitleEditText.getText().toString();
+                        toDoManagerSingleton.insertToDoList(ListToDoListsActivity.this, newListTitle);
+
+                        dialog.dismiss();
+                    }
+                });
+
+                cancelButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        dialog.dismiss();
+                    }
+                });
+                dialog.show();
+            }
+        });
 
         toDoListsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override

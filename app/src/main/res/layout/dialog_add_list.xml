@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/dialogMessage"
+        android:text="@string/dialog_message"/>
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/newListTitleEditText"
+        android:layout_below="@+id/dialogMessage"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/addNewListButton"
+        android:layout_below="@+id/newListTitleEditText"
+        android:text="@string/add"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/dialogCancel"
+        android:text="@string/cancel"
+        android:layout_below="@+id/newListTitleEditText"
+        android:layout_toRightOf="@+id/addNewListButton"
+        android:layout_toEndOf="@+id/addNewListButton" />
+
+</RelativeLayout>

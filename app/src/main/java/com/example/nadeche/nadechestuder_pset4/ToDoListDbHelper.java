@@ -105,8 +105,8 @@ class ToDoListDbHelper extends SQLiteOpenHelper {
 
         SQLiteDatabase db = getReadableDatabase();
 
-        String query = "SELECT " + TABLE_NAME_TO_DOS + ".*, " + TITLE_LISTS_COLUMN+ " FROM " + TABLE_NAME_LISTS +
-                " INNER JOIN " + TABLE_NAME_TO_DOS + " ON " + TABLE_NAME_LISTS + "." + _ID +
+        String query = "SELECT " + TABLE_NAME_TO_DOS + ".*, " + TITLE_LISTS_COLUMN + ", " + TABLE_NAME_LISTS + "." + _ID + " AS listId2 FROM " + TABLE_NAME_LISTS +
+                " LEFT JOIN " + TABLE_NAME_TO_DOS + " ON " + TABLE_NAME_LISTS + "." + _ID +
                 " = " + TABLE_NAME_TO_DOS + "." + LIST_ID_TO_DOS_COLUMN +
                 " ORDER BY " + TABLE_NAME_LISTS + "." + _ID + ", " + TABLE_NAME_TO_DOS + "." + _ID;
         Cursor cursor = db.rawQuery(query, null);
@@ -119,31 +119,35 @@ class ToDoListDbHelper extends SQLiteOpenHelper {
             int _idColumnIndex = cursor.getColumnIndex(_ID);
             int taskColumnIndex = cursor.getColumnIndex(TASK_TO_DOS_COLUMN);
             int isDoneColumnIndex = cursor.getColumnIndex(IS_DONE_TO_DOS_COLUMN);
-            int listIdColumnIndex = cursor.getColumnIndex(LIST_ID_TO_DOS_COLUMN);
             int titleColumnIndex = cursor.getColumnIndex(TITLE_LISTS_COLUMN);
+            int listId2ColumnIndex = cursor.getColumnIndex("listId2");
             long lastListId = 0;
             ToDoList toDoList = null;
 
             // save the new items in the ToDoListList
             do {
-                if(cursor.getLong(listIdColumnIndex) > lastListId) {
-                    toDoList = new ToDoList();
-                    toDoList.setId(cursor.getLong(listIdColumnIndex));
-                    toDoList.setTitle(cursor.getString(titleColumnIndex));
+                if(cursor.getLong(listId2ColumnIndex) > lastListId) {
+                    toDoList = new ToDoList(
+                            cursor.getLong(listId2ColumnIndex),
+                            cursor.getString(titleColumnIndex));
 
                     toDoListList.add(toDoList);
                     Log.d("new toDoList", String.valueOf(lastListId));
                 }
 
-                ToDoItem toDoItem = new ToDoItem(
-                        cursor.getLong(_idColumnIndex),
-                        cursor.getString(taskColumnIndex),
-                        cursor.getLong(listIdColumnIndex));
-                toDoItem.setDone(cursor.getInt(isDoneColumnIndex) == 1);
+                if (!cursor.isNull(_idColumnIndex)) {
+                    ToDoItem toDoItem = new ToDoItem(
+                    cursor.getLong(_idColumnIndex),
+                    cursor.getString(taskColumnIndex),
+                    cursor.getLong(listId2ColumnIndex));
+                    toDoItem.setDone(cursor.getInt(isDoneColumnIndex) == 1);
 
-                toDoList.getToDoList().add(toDoItem);
+                    toDoList.getToDoList().add(toDoItem);
+                }
 
-                lastListId = toDoItem.getListId();
+                lastListId = cursor.getLong(listId2ColumnIndex);
+                Log.d("lastListId", String.valueOf(lastListId));
+                Log.d("list name", cursor.getString(titleColumnIndex));
             } while(cursor.moveToNext());
         }
         cursor.close();
@@ -230,15 +234,17 @@ class ToDoListDbHelper extends SQLiteOpenHelper {
     //---------------- CRUD methods for to do lists table ----------------//
 
     /** Inserts a new row in the to do lists table and ads a list title*/
-    public  void insert(String listTitle) {
+    public  long insert(String listTitle) {
         SQLiteDatabase db = getWritableDatabase();
 
         ContentValues entry = new ContentValues();
         entry.put(TITLE_LISTS_COLUMN, listTitle);
 
-        db.insert(TABLE_NAME_LISTS, null, entry);
+        long rowId = db.insert(TABLE_NAME_LISTS, null, entry);
 
         db.close();
+
+        return rowId;
     }
 
     /** Reads the current to do lists table and saves it in the ToDoList list */
@@ -259,9 +265,9 @@ class ToDoListDbHelper extends SQLiteOpenHelper {
 
             // save the new items in the ToDoList
             do{
-                ToDoList toDoList = new ToDoList();
-                toDoList.setId(toDoCursor.getLong(_idColumnIndex));
-                toDoList.setTitle(toDoCursor.getString(titleColumnIndex));
+                ToDoList toDoList = new ToDoList(
+                        toDoCursor.getLong(_idColumnIndex),
+                        toDoCursor.getString(titleColumnIndex));
 
                 toDoListList.add(toDoList);
 

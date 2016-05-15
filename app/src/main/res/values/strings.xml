@@ -15,4 +15,6 @@
     <string name="db_instruction_entry_done">Tap short to cross things off your list.</string>
     <string name="db_instruction_entry_delete">Tap and hold to delete things off your list.</string>
     <string name="to_do_lists">To do lists</string>
+    <string name="dialog_message">Add a new To Do list</string>
+    <string name="cancel">Cancel</string>
 </resources>

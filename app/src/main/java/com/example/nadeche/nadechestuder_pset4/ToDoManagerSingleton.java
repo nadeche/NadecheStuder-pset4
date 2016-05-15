@@ -53,4 +53,14 @@ public class ToDoManagerSingleton {
 
         return null;
     }
+
+    public void insertToDoList(Context context, String title) {
+
+        ToDoListDbHelper toDoListDbHelper = new ToDoListDbHelper(context);
+        long listId = toDoListDbHelper.insert(title);
+
+        ToDoList toDoList = new ToDoList(listId, title);
+        toDoListList.add(toDoList);
+
+    }
 }
