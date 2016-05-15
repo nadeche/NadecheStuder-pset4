@@ -89,11 +89,13 @@ public class ListToDoListsActivity extends AppCompatActivity {
                     Toast.makeText(ListToDoListsActivity.this, getText(R.string.toast_nothing_to_save),Toast.LENGTH_SHORT).show();
                     dialog.dismiss();
                 }
-                toDoManagerSingleton.insertToDoList(ListToDoListsActivity.this, newListTitle);
+                else {
+                    toDoManagerSingleton.insertToDoList(ListToDoListsActivity.this, newListTitle);
 
-                listToDoListAdapter.notifyDataSetChanged();
+                    listToDoListAdapter.notifyDataSetChanged();
 
-                dialog.dismiss();
+                    dialog.dismiss();
+                }
             }
         });
         cancelButton.setOnClickListener(new View.OnClickListener() {
